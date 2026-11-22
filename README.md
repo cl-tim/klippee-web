@@ -1,5 +1,7 @@
 # klippee
 
+[Support me](https://ko-fi.com/tquinn)
+
 Klippee stores, syncs, and shares Klipper printer configurations. It includes:
 
 - Public config packages that people can browse, compare, fork, and reuse. A

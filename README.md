@@ -89,6 +89,8 @@ OpenSCAD, build123d, and OpenCascade; see [NOTICE.md](NOTICE.md) and
 
 ## Development
 
+Use Node.js 26 or Node.js 24.15 and later in the 24.x series.
+
 ```bash
 npm run setup:dev
 npm run test:ui:smoke:install

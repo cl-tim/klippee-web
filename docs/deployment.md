@@ -65,8 +65,8 @@ https://www.klippee.example.com -> https://klippee.example.com
 
 ## 2. Install and Authenticate Wrangler
 
-Use Node.js 24, matching `engines` in `package.json` and the committed
-`.node-version`.
+Use Node.js 26, the default in `.node-version`. Node.js 24.15 or later in
+the 24.x series is also supported.
 
 Install dependencies:
 

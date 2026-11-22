@@ -1,7 +1,7 @@
 # cad_app.py relies on Depends(..., scope="function") for its admission slot;
 # the scope parameter for yield dependencies needs a recent FastAPI (verified
 # present on 0.140.x), so require at least that minor.
-fastapi>=0.141.1
+fastapi>=0.165.0
 # httpx is required by fastapi.testclient.TestClient in server/tests.
 httpx==0.28.1
 uvicorn[standard]==0.54.0

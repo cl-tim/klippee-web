@@ -21,9 +21,42 @@ The public site is [klippee.xyz](https://klippee.xyz). Browse community printer
 configurations in [Shared Configs](https://klippee.xyz/shared-configs), or open
 [shared Orca profiles](https://klippee.xyz/shared-configs?type=orca).
 
-Run your own instance with the experimental [Docker Compose release](docs/self-hosting.md).
-It stores data on your server and requires no Cloudflare account.
-Download the images and setup files from [GitHub Releases](https://github.com/cl-tim/klippee-web/releases).
+## Self-host with Docker Compose
+
+The experimental release runs the app and CAD service on a Linux AMD64 server
+with Docker Engine, Compose v2, and at least 6 GB of RAM. It stores data in a
+named Docker volume and runs without a Cloudflare account or OAuth credentials.
+
+1. Save [`compose.example.yaml`](compose.example.yaml) and
+   [`.env.example`](.env.example) in an empty directory. From one
+   [`selfhost-v*` release](https://github.com/cl-tim/klippee-web/releases),
+   download `klippee-app-linux-amd64.tar.gz`, `klippee-cad-linux-amd64.tar.gz`,
+   and `SHA256SUMS` into that directory.
+2. Copy the environment template and generate a session secret.
+
+   ```sh
+   cp .env.example .env
+   openssl rand -hex 32
+   ```
+
+   Edit `.env` and paste the generated value into `SESSION_SECRET`. Set
+   `KLIPPEE_VERSION` to the downloaded release tag and `APP_ORIGIN` to the HTTPS
+   origin you will open in your browser, such as `https://klippee.example.com`.
+   Keep `AUTH_MODE=local` for a shared workspace without sign-in.
+3. Verify and load both images, then start the stack.
+
+   ```sh
+   sha256sum --check --ignore-missing SHA256SUMS
+   docker image load --input klippee-app-linux-amd64.tar.gz
+   docker image load --input klippee-cad-linux-amd64.tar.gz
+   docker compose -f compose.example.yaml up -d --wait
+   ```
+
+Configure an [HTTPS reverse proxy](docs/self-hosting.md#https-reverse-proxy) to
+forward your HTTPS URL to `127.0.0.1:8080`. In local mode, everyone who can reach
+that URL can use the shared workspace. Restrict it to your trusted network or
+VPN. The [self-hosting guide](docs/self-hosting.md) covers OAuth, backups,
+upgrades, and source builds.
 
 ## Documentation
 

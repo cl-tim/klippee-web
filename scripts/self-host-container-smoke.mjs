@@ -24,7 +24,7 @@ const compose = (...args) => execFileSync("docker", ["compose", "--project-name"
   stdio: "inherit", timeout: 240_000,
 });
 try {
-  await writeFile(join(directory, "compose.yaml"), await readFile(resolve("compose.yaml")));
+  await writeFile(join(directory, "compose.yaml"), await readFile(resolve("compose.example.yaml")));
   await writeFile(join(directory, ".env"), [
     "APP_ORIGIN=https://klippee.example.com",
     "AUTH_MODE=local",

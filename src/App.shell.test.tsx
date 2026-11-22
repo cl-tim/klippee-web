@@ -12,6 +12,17 @@ import {
   stubApiRoutes,
 } from "./test/appTestUtils";
 
+function renderMobileShell() {
+  // jsdom evaluates media queries at a fixed desktop width. Show the mobile
+  // header here so these tests can exercise its controls.
+  render(
+    <>
+      <style>{'.mantine-hidden-from-sm:has([aria-controls="primary-navigation"]) { display: block !important; }'}</style>
+      <App />
+    </>,
+  );
+}
+
 describe("App shell", () => {
   it("renders the brand, primary tabs, and the support link", async () => {
     render(<App />);
@@ -140,7 +151,7 @@ describe("App shell", () => {
   });
 
   it("returns focus to the mobile navigation button on Escape", async () => {
-    render(<App />);
+    renderMobileShell();
     const toggle = await screen.findByRole("button", { name: "Open navigation menu" });
     await userEvent.click(toggle);
     screen.getByRole("link", { name: "Shared Configs" }).focus();
@@ -150,7 +161,7 @@ describe("App shell", () => {
   });
 
   it("toggles the primary navigation from the mobile menu button", async () => {
-    render(<App />);
+    renderMobileShell();
 
     const menuButton = await screen.findByRole("button", { name: "Open navigation menu" });
     const shellNav = screen.getByLabelText("Klippee navigation");

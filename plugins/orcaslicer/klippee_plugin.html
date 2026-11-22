@@ -1,0 +1,193 @@
+<style>
+[hidden] { display: none !important; }
+body { margin: 0; padding: 20px; font: 14px/1.5 system-ui, sans-serif; color: var(--orca-fg, #202124); background: var(--orca-bg, #fff); }
+main { max-width: 660px; margin: auto; } label { display: block; margin: 12px 0; }
+input, select { box-sizing: border-box; width: 100%; padding: 9px; margin-top: 5px; font: inherit; color: inherit; background: var(--orca-bg, #fff); border: 1px solid var(--orca-border, #888); border-radius: 5px; }
+button { padding: 9px 14px; margin: 5px 6px 5px 0; font: inherit; cursor: pointer; }
+select { width: 100%; padding: 8px; font: inherit; color: inherit; background: var(--orca-bg, #fff); }
+button:disabled { cursor: default; opacity: .6; } :focus-visible { outline: 3px solid #2979ff; outline-offset: 2px; }
+#status { min-height: 24px; } li { margin: 6px 0; } .note { color: var(--orca-muted, #60656c); }
+</style>
+<main>
+<h1>Klippee</h1>
+<h2>Save to Klippee</h2>
+<p>Import enabled printer profiles and all custom process and filament profiles into your private library. Nozzle variants stay separate. Physical printers are linked optionally in Klippee.</p>
+<section id="connectedUploads" hidden aria-label="Save using your connection">
+<button id="reviewSavedLibrary" type="button">Review profile import</button>
+<button id="reviewSavedSetup" type="button">Review current setup</button>
+<p>Review each upload before confirming. Profile imports replace your library backup; setup saves add a new snapshot with all filament slots and unsaved edits. No printer actions are sent. Enable imports and saves for this installation in Klippee first.</p>
+</section>
+<div id="manualImport"><p>In Klippee, open Orca Workspace and choose Import from OrcaSlicer to create a code. A saved-setup code captures only your current combination instead.</p>
+<label>Connection code<input id="code" type="password" autocomplete="off" spellcheck="false" maxlength="2048"></label>
+<button id="review" type="button">Review import</button></div>
+<section id="preview" hidden aria-label="Setup review">
+  <h2 id="printer"></h2><p id="site" class="note"></p><ul id="selections"></ul>
+  <details id="libraryReview" hidden><summary id="libraryCount"></summary><ul id="libraryProfiles"></ul></details>
+  <p id="ancestry"></p><p id="omitted" class="note"></p>
+  <p>Custom G-code is included. Review it for personal information before saving. No models or printer actions are sent.</p>
+  <label id="setupTitle">Setup name<input id="title" maxlength="120"></label>
+  <button id="save" type="button">Save to Klippee</button><button id="cancel" type="button">Cancel</button>
+</section>
+<h2>Browse your Klippee library</h2>
+<p>In Klippee's Orca Workspace choose Browse library in OrcaSlicer. Paste the connection code once. This Orca installation stays connected after restarts until you disconnect it here or in Klippee. Browsing and restoring are always available. Imports and setup saves need the permission enabled in Klippee and your confirmation for each upload. Nothing syncs automatically.</p>
+<div id="libraryPairing"><label>Library access code<input id="browseCode" type="password" autocomplete="off" spellcheck="false" maxlength="2048"></label>
+<button id="browseLibrary" type="button">Open library</button></div>
+<section id="libraryBrowser" hidden aria-label="Klippee library">
+  <p id="libraryAccess" class="note"></p>
+  <button id="reloadLibrary" type="button">Reload library</button><button id="disconnectLibrary" type="button">Disconnect library</button>
+  <label>Search saved profiles<input id="librarySearch" type="search"></label>
+  <label>Profile type<select id="libraryKind"><option value="">All profiles</option><option value="machine">Printer profiles</option><option value="filament">Custom filaments</option><option value="process">Custom processes</option></select></label>
+  <label>Saved profile<select id="libraryProfile" size="8"></select></label>
+  <p id="browserProfileCount" role="status"></p><p id="libraryProfileDetails"></p>
+  <button id="reviewLibraryProfile" type="button">Review selected profile</button>
+</section>
+<h2>Restore from a file</h2>
+<p>In Klippee, choose Export profile for OrcaSlicer on a library profile, or Export saved setup. Open the JSON file here to restore separate copies with their full inheritance.</p>
+<p>Your original presets, current selections, unsaved edits and models stay unchanged. Restoring again creates another set of copies. No printer actions are sent.</p>
+<label>Saved profile or setup file<input id="restoreFile" type="file" accept=".json,application/json"></label>
+<section id="restorePreview" hidden aria-label="Restore review">
+  <h3>Review the saved profile or setup</h3><ul id="restoreSelections"></ul>
+  <p id="restoreAncestry"></p>
+  <p>Custom G-code is included and can run when you later print. Only restore files you trust. Printer connection credentials are excluded.</p>
+  <button id="restore" type="button">Restore preset copies</button>
+</section>
+<section id="restoreResult" hidden aria-label="Restored preset selections">
+  <h3>Restored copies</h3>
+  <p>For an individual profile, select the listed copy in Prepare when needed. Your other selections and filament slots stay unchanged. For a complete setup, Orca requires manual selection after restore. Choose the printer first, then process, then each filament slot below. Add or remove filament slots to match this list. These names belong to the new copies. Keep or save any current edits if Orca asks.</p>
+  <ol id="restoredNames"></ol>
+</section>
+<button id="checkRestore" type="button">Check last restore</button>
+<button id="cancelOperation" type="button" hidden>Cancel operation</button>
+<p id="status" role="status" aria-live="polite"></p>
+</main>
+<script>
+(() => {
+  const element = id => document.getElementById(id);
+  let waiting = false;
+  function busy(value) { waiting = value; for (const id of ['review', 'save', 'cancel', 'code', 'title', 'restoreFile', 'restore', 'checkRestore', 'browseCode', 'browseLibrary', 'reloadLibrary', 'disconnectLibrary', 'librarySearch', 'libraryKind', 'libraryProfile', 'reviewLibraryProfile', 'reviewSavedLibrary', 'reviewSavedSetup']) element(id).disabled = value; element('cancelOperation').hidden = !value; }
+  function selectionLabel(index) { return index === 0 ? 'Printer' : index === 1 ? 'Process' : 'Filament ' + (index - 1); }
+  let library = null;
+  const profileLabel = kind => ({machine: 'Printer profile', filament: 'Filament', process: 'Process'}[kind]);
+  function updateProfileDetails() {
+    const profile = library?.profiles.find(item => item.id === element('libraryProfile').value);
+    element('reviewLibraryProfile').disabled = waiting || !profile;
+    element('libraryProfileDetails').textContent = profile ? profileLabel(profile.kind) + (profile.nozzle ? ' · ' + profile.nozzle + ' mm nozzle' : '') + ' · Inherits from: ' + (profile.parent || 'No parent') + '. The complete ancestry will be restored as separate copies.' : '';
+  }
+  function filterProfiles() {
+    const selected = element('libraryProfile').value;
+    const query = element('librarySearch').value.trim().toLowerCase(), kind = element('libraryKind').value;
+    const profiles = (library?.profiles || []).filter(p => (!kind || p.kind === kind) && (p.name + ' ' + (p.nozzle || '')).toLowerCase().includes(query));
+    element('libraryProfile').replaceChildren(...profiles.map(p => {
+      const option = document.createElement('option'); option.value = p.id; option.textContent = profileLabel(p.kind) + ': ' + p.name; return option;
+    }));
+    if (profiles.some(p => p.id === selected)) element('libraryProfile').value = selected;
+    else if (profiles.length) element('libraryProfile').selectedIndex = 0;
+    element('browserProfileCount').textContent = profiles.length + ' of ' + (library?.profiles.length || 0) + ' saved profiles';
+    updateProfileDetails();
+  }
+  function showLibrary(value, origin) {
+    library = value; element('libraryBrowser').hidden = !value; element('libraryPairing').hidden = !!value; element('manualImport').hidden = !!value; element('connectedUploads').hidden = !value;
+    if (value) { element('libraryAccess').textContent = origin + (value.expiresAt ? ' · Read-only access until ' + new Date(value.expiresAt).toLocaleTimeString() : ' · Connected on this computer · ' + (value.uploadsEnabled ? 'Browsing, profile imports and setup saves enabled' : 'Read-only library access')) + '. Originals and active selections are kept.'; filterProfiles(); }
+  }
+  for (const [id, command] of [['reviewSavedLibrary', 'review_saved_library'], ['reviewSavedSetup', 'review_saved_setup']]) {
+    element(id).onclick = () => { element('preview').hidden = true; element('restorePreview').hidden = true; element('restoreResult').hidden = true; busy(true); orca.postMessage({command}); };
+  }
+  element('browseLibrary').onclick = () => { element('preview').hidden = true; element('restorePreview').hidden = true; element('restoreResult').hidden = true; busy(true); orca.postMessage({command: 'browse_library', code: element('browseCode').value}); };
+  element('reloadLibrary').onclick = () => { busy(true); orca.postMessage({command: 'reload_library'}); };
+  element('disconnectLibrary').onclick = () => orca.postMessage({command: 'disconnect_library'});
+  element('librarySearch').oninput = filterProfiles; element('libraryKind').onchange = filterProfiles;
+  element('libraryProfile').onchange = updateProfileDetails;
+  element('reviewLibraryProfile').onclick = () => {
+    if (!element('libraryProfile').value) return;
+    element('restorePreview').hidden = true; element('restoreResult').hidden = true; busy(true);
+    orca.postMessage({command: 'review_library_profile', profileId: element('libraryProfile').value});
+  };
+  element('cancelOperation').onclick = () => orca.postMessage({command: 'cancel'});
+  element('title').oninput = () => orca.postMessage({command: 'set_title', title: element('title').value});
+  element('restoreFile').onchange = async () => {
+    const file = element('restoreFile').files[0];
+    if (!file) return;
+    element('restorePreview').hidden = true; element('restoreResult').hidden = true; element('preview').hidden = true;
+    if (file.size > 600000) { element('status').textContent = 'Choose a Klippee profile or setup export smaller than 600 KB.'; return; }
+    busy(true); element('status').textContent = 'Validating saved setup…';
+    try { const text = await file.text(); element('restoreFile').value = ''; orca.postMessage({command: 'review_restore', text}); }
+    catch { busy(false); element('status').textContent = 'Could not read the setup file.'; }
+  };
+  element('restore').onclick = () => { busy(true); element('status').textContent = 'Restoring and verifying preset copies…'; orca.postMessage({command: 'restore'}); };
+  element('checkRestore').onclick = () => { busy(true); element('status').textContent = 'Checking selections and inheritance…'; orca.postMessage({command: 'check_restore'}); };
+  element('review').onclick = () => {
+    element('preview').hidden = true; busy(true); element('status').textContent = 'Reading your setup and checking the connection code…';
+    orca.postMessage({command: 'review', code: element('code').value});
+  };
+  element('save').onclick = () => {
+    busy(true); element('status').textContent = 'Saving setup…'; orca.postMessage({command: 'save', title: element('title').value});
+  };
+  element('cancel').onclick = () => { orca.postMessage({command: 'cancel'}); };
+  function render(message) {
+    if (!message) return;
+    if (message.command === 'working') { busy(true); element('status').textContent = message.text; return; }
+    busy(false);
+    if (message.command === 'error') { if (message.disconnected) showLibrary(null, ''); element('status').textContent = message.error; return; }
+    if (message.command === 'library_listed') {
+      element('browseCode').value = ''; showLibrary(message.library, message.origin); element('status').textContent = message.library.profiles.length ? 'Choose a profile to review before restoring copies.' : 'Your library is empty. Import profiles from Orca into Klippee first.';
+    } else if (message.command === 'restore_review') {
+      element('restoreSelections').replaceChildren(...message.selections.map((item, index) => {
+        const li = document.createElement('li'); li.textContent = (item.kind === 'machine' ? 'Printer' : item.kind === 'process' ? 'Process' : 'Filament' + (item.slot === null ? '' : ' ' + (item.slot + 1))) + ': ' + item.name + (item.dirty ? ' (captured unsaved changes)' : ''); return li;
+      }));
+      element('restoreAncestry').textContent = message.nodes + ' saved presets and their inheritance will be preserved.' + (message.profile ? ' The profile is restored from its saved settings.' : ' Captured edits become separate child presets.');
+      element('restorePreview').hidden = false; element('status').textContent = 'Review this saved profile or setup, then restore copies.';
+    } else if (message.command === 'restored') {
+      element('restorePreview').hidden = true;
+      element('restoredNames').replaceChildren(...message.names.map((name, index) => {
+        const li = document.createElement('li'); const label = document.createElement('label'); label.textContent = message.profile ? ({machine: 'Printer profile', process: 'Process', filament: 'Filament'}[message.kinds[index]]) : selectionLabel(index);
+        const input = document.createElement('input'); input.readOnly = true; input.value = name; input.setAttribute('aria-label', 'Restored ' + label.textContent); label.append(input); li.append(label); return li;
+      }));
+      element('restoreResult').hidden = false;
+      element('status').textContent = message.notice || (message.profile ? 'Profile and its full inheritance restored and verified. Select the new copy in Prepare when needed. Check last restore verifies it without changing selections.' : 'Preset copies restored and verified. Select all the listed presets, then choose Check last restore.');
+    } else if (message.command === 'profile_verified') {
+      element('status').textContent = 'Verified: the restored profile and all ' + message.nodes + ' presets in its inheritance chain match the saved copy. Your current selections are unchanged. Nothing was sent to the printer.';
+    } else if (message.command === 'restore_verified') {
+      element('status').textContent = 'Verified: the restored printer, process and all ' + message.slots + ' filament slots are selected. All ' + message.nodes + ' presets and their inheritance match the saved copy. Nothing was sent to the printer.';
+    } else if (message.command === 'connected') {
+      element('printer').textContent = 'Save to ' + message.data.printerName;
+      const profiles = message.profiles || [];
+      element('libraryReview').hidden = !profiles.length;
+      element('libraryCount').textContent = profiles.length + ' library profiles (including profiles not currently selected)';
+      element('libraryProfiles').replaceChildren(...profiles.map(item => {
+        const li = document.createElement('li'); li.textContent = (item.kind === 'machine' ? 'Printer profile' : item.kind === 'process' ? 'Process' : 'Filament') + ': ' + item.name; return li;
+      }));
+      element('save').textContent = profiles.length ? 'Import profiles to Klippee' : 'Save to Klippee';
+      element('setupTitle').hidden = !!profiles.length;
+      element('site').textContent = message.origin;
+      element('selections').replaceChildren(...message.selections.map(item => {
+        const li = document.createElement('li');
+        const label = item.kind === 'filament' ? 'Filament ' + (item.slot + 1) : item.kind === 'machine' ? 'Printer' : 'Process';
+        li.textContent = label + ': ' + item.name + (item.dirty ? ' (includes unsaved changes)' : ''); return li;
+      }));
+      element('ancestry').textContent = message.nodes + ' presets in the inheritance graph will be preserved.';
+      element('omitted').textContent = message.omittedKeys.length ? 'Connection/account fields excluded: ' + message.omittedKeys.join(', ') : 'No printer connection credentials detected.';
+      element('title').value = (message.selections[0].name + ' / ' + message.selections[1].name).slice(0, 120);
+      element('preview').hidden = false; element('status').textContent = 'Review this setup before saving.';
+    } else if (message.command === 'saved') {
+      element('preview').hidden = true; element('code').value = '';
+      element('status').textContent = message.data.library ? 'Profiles imported into your Klippee library. Your current setup and unsaved edits are included in the backup. Reload the library in Klippee to see the updated import.' : 'Saved to Klippee. Reload the library in Klippee to see the new saved setup.';
+    } else if (message.command === 'cancelled') {
+      element('preview').hidden = true; element('code').value = ''; element('browseCode').value = ''; showLibrary(message.library || null, message.origin || ''); element('status').textContent = message.notice || 'Disconnected locally. Revoke the code in Klippee to end its server access immediately.';
+      element('restorePreview').hidden = true;
+    }
+  }
+  orca.onMessage(message => {
+    if (message && message.command === 'state') {
+      for (const id of ['preview', 'restorePreview', 'restoreResult']) element(id).hidden = true;
+      showLibrary(message.library || null, message.browseOrigin || '');
+      if (message.view) render(message.view);
+      element('title').value = message.title || '';
+      busy(message.busy);
+      if (message.notice) element('status').textContent = message.notice;
+      else if (message.busy) element('status').textContent = message.progress || 'Working…';
+    } else render(message);
+  });
+  orca.postMessage({command: 'ready'});
+  setInterval(() => { if (waiting) orca.postMessage({command: 'poll'}); }, 100);
+})();
+</script>

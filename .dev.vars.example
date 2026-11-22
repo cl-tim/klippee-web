@@ -1,0 +1,14 @@
+APP_ORIGIN="http://localhost:5173"
+CAD_API_BASE="http://127.0.0.1:8791"
+SESSION_SECRET="dev-session-secret-change-me"
+# Set to "1" to skip OAuth and auto-sign-in as "Local Developer" on localhost.
+# This lets you test all authenticated views without GitHub/Discord credentials.
+LOCAL_AUTH_BYPASS="1"
+# Optional local-only token for testing the protected improvement-sample review API.
+LOG_IMPROVEMENT_REVIEW_TOKEN=""
+# Optional local-only token for testing the protected R2 inventory/reclamation API.
+STORAGE_MAINTENANCE_TOKEN=""
+GITHUB_CLIENT_ID=""
+GITHUB_CLIENT_SECRET=""
+DISCORD_CLIENT_ID=""
+DISCORD_CLIENT_SECRET=""

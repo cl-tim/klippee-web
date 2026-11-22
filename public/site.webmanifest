@@ -1,0 +1,21 @@
+{
+  "name": "Klippee",
+  "short_name": "Klippee",
+  "description": "Share, edit, version, diagnose, and sync Klipper printer configurations.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08110f",
+  "theme_color": "#08110f",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

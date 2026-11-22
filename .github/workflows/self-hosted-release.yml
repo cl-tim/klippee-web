@@ -1,0 +1,85 @@
+name: Self-hosted release
+on:
+  push:
+    tags: ["selfhost-v*"]
+permissions:
+  contents: read
+concurrency:
+  group: self-hosted-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: npm ci
+      - run: python -m pip install -r server/cad-requirements.txt
+      - run: npm run test:ui:smoke:install
+      - run: node scripts/publication-check.mjs
+      - run: npm run check
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate release tag
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^selfhost-v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: klippee:${{ github.ref_name }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=GPL-2.0-or-later
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cad
+          platforms: linux/amd64
+          load: true
+          tags: klippee-cad:${{ github.ref_name }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Verify Compose images before publishing
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/self-host-container-smoke.mjs "klippee:$RELEASE_TAG" "klippee-cad:$RELEASE_TAG"
+      - name: Prepare release files
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          mkdir release
+          sed -E "s/selfhost-v[0-9]+\.[0-9]+\.[0-9]+/$RELEASE_TAG/g" compose.yaml > release/compose.yaml
+          sed -E "s/selfhost-v[0-9]+\.[0-9]+\.[0-9]+/$RELEASE_TAG/g" .env.example > release/default.env.example
+          sed -e "s|(../NOTICE.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/NOTICE.md)|g" -e "s|(../server/CAD_NOTICE.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/server/CAD_NOTICE.md)|g" -e "s|(r2-reclamation.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/docs/r2-reclamation.md)|g" docs/self-hosting.md > release/SELF-HOSTING.md
+          cp LICENSE NOTICE.md release/
+          git archive --format=tar.gz --prefix=klippee/ -o "release/klippee-$RELEASE_TAG-source.tar.gz" HEAD
+          docker image save "klippee:$RELEASE_TAG" | gzip -1 > release/klippee-app-linux-amd64.tar.gz
+          docker image save "klippee-cad:$RELEASE_TAG" | gzip -1 > release/klippee-cad-linux-amd64.tar.gz
+          cd release
+          sha256sum compose.yaml default.env.example SELF-HOSTING.md LICENSE NOTICE.md *.tar.gz > SHA256SUMS
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" --verify-tag --prerelease --title "Klippee $RELEASE_TAG" --notes "Experimental single-server Docker Compose release for Linux AMD64. Download and load both image archives; no registry account is needed. Read SELF-HOSTING.md before installation." release/compose.yaml release/default.env.example release/SELF-HOSTING.md release/LICENSE release/NOTICE.md release/SHA256SUMS release/*.tar.gz

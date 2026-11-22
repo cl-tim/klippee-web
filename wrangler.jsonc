@@ -1,0 +1,132 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "klippee",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-05-12",
+  "vars": {
+    "APP_ORIGIN": "https://klippee.example.com"
+  },
+  "triggers": {
+    "crons": ["0 3 * * *"]
+  },
+  "containers": [
+    {
+      "class_name": "CadEngineContainer",
+      "image": "./Dockerfile.cad",
+      "instance_type": "standard-1",
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CAD_CONTAINER",
+        "class_name": "CadEngineContainer"
+      },
+      {
+        "name": "CANONICAL_BLOB_RECLAIMER",
+        "class_name": "CanonicalBlobReclaimer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "StlGeometryContainer"
+      ]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": [
+        "CadEngineContainer"
+      ]
+    },
+    {
+      "tag": "v3",
+      "deleted_classes": [
+        "StlGeometryContainer"
+      ]
+    },
+    {
+      "tag": "v4",
+      "new_sqlite_classes": [
+        "CanonicalBlobReclaimer"
+      ]
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "AUTH_RATE_LIMITER",
+      "namespace_id": "1003",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    },
+    {
+      "name": "CAD_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    },
+    {
+      "name": "DIAGNOSTIC_UPLOAD_RATE_LIMITER",
+      "namespace_id": "1004",
+      "simple": {
+        "limit": 4,
+        "period": 60
+      }
+    },
+    {
+      "name": "LOG_IMPROVEMENT_RATE_LIMITER",
+      "namespace_id": "1005",
+      "simple": {
+        "limit": 24,
+        "period": 60
+      }
+    },
+    {
+      "name": "PACKAGE_RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ],
+  "dev": {
+    "enable_containers": false
+  },
+  "assets": {
+    // The @cloudflare/vite-plugin build writes client assets to dist/client
+    // and the Worker bundle (including its compiled auth/scrub logic) to
+    // dist/klippee. Deploys normally follow the plugin's generated config
+    // (dist/klippee/wrangler.json, assets "../client") via the
+    // .wrangler/deploy/config.json redirect, but this directory must match
+    // the real client output so a bare `wrangler deploy` without the redirect
+    // can never upload the Worker bundle as a public static asset.
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // HTML needs a fresh CSP nonce before Cloudflare injects browser checks.
+    // Hashed assets and printer downloads still use the direct static path.
+    "run_worker_first": ["/*", "!/assets/*", "!/install/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "klippee-example-db",
+      // Replace with your D1 database ID before deploying.
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BLOBS",
+      "bucket_name": "klippee-example-blobs"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+.trigger:hover,
+.trigger[data-expanded] {
+  --account-background: var(--accent);
+  --account-border: var(--border-strong);
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+@media (min-width: 48em) {
+  :global(.sidebar.is-collapsed) .identity,
+  :global(.sidebar.is-collapsed) .chevron {
+    display: none;
+  }
+
+  :global(.sidebar.is-collapsed) .trigger {
+    justify-content: center;
+    --account-height: 44px;
+    --account-padding: 3px;
+  }
+}

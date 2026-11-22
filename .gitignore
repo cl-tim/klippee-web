@@ -1,0 +1,50 @@
+# Klippee local sync metadata
+.klippee/
+klippee_variables.cfg
+
+# Raw printer runtime state
+saved_variables.cfg
+config.mksini
+*.log
+
+# Generated or historical backups
+*.bak
+*.bkp
+printer-[0-9]*.cfg
+printer_*_*.cfg
+gcode_macro_[0-9]*.cfg
+
+# Large raw archives
+*.7z
+*.zip
+*.tar
+*.tar.gz
+
+reference/
+
+# Node/Vite outputs
+node_modules/
+dist/
+artifacts/
+.claude/
+.codex-attachments/
+self-hosted/data/
+docs/user-guide/images/
+plugins/orcaslicer/*-result.json
+.playwright-cli/
+output/
+storage-inventory*.json
+*.tsbuildinfo
+
+# Python service outputs
+.venv/
+__pycache__/
+*.pyc
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
+CLAUDE.md

@@ -11,6 +11,7 @@
     "setup:dev": "npm install && node scripts/setup-dev.mjs",
     "dev": "vite",
     "build": "node scripts/build-orca-plugin.mjs && tsc -b && vite build",
+    "build:cloudflare": "node scripts/configure-cloudflare.mjs && npm run build",
     "check": "npm run lint && npm run license:audit && npm run build && npm run test:cli && npm run test:orca && npm run test:ui && npm run test:web && node --test --test-concurrency=4 \"tests/worker/*.test.mjs\" && npm run test:self-host && npm run test:cad && npm run test:dev",
     "lint": "eslint .",
     "test:worker": "npm run build && node --test --test-concurrency=4 \"tests/worker/*.test.mjs\"",

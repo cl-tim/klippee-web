@@ -373,6 +373,32 @@ Build command: npm run build
 Deploy command: npm run deploy
 ```
 
+To keep deployment settings outside Git, set `KLIPPEE_WRANGLER_OVERRIDES`
+as a protected build variable and use `npm run build:cloudflare` as the build
+command. Set the variable to a JSON object with your HTTPS `vars.APP_ORIGIN`,
+the `d1_databases` entry for `DB`, and the `r2_buckets` entry for `BLOBS`.
+The arrays replace the corresponding arrays in `wrangler.jsonc`. You can also
+provide `ratelimits`, `placement`, and `observability` for your environment.
+
+```json
+{
+  "vars": { "APP_ORIGIN": "https://app.example.com" },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "example-app-db",
+    "database_id": "11111111-2222-4333-8444-555555555555"
+  }],
+  "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "example-app-blobs" }]
+}
+```
+
+The command writes a Git-ignored `wrangler.json` that takes precedence over
+the template during build, predeploy checks, and D1 migrations. The deploy
+command checks the bundled bindings before running migrations. Use this in an
+isolated build checkout. For an existing Worker, reference its existing D1
+database and R2 bucket. Set OAuth and session credentials as runtime secrets on
+that Worker. Keep production build settings available only to a trusted branch.
+
 The npm `predeploy` lifecycle runs `npm run predeploy` automatically before the
 deploy script. The deploy script then verifies it is running in CI, applies D1
 migrations, and invokes Wrangler. Plain `npm run deploy` refuses to run when

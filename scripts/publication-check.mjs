@@ -6,7 +6,7 @@ import { once } from "node:events";
 // This guardrail complements human review, OCR/image review and a secret scanner;
 // it cannot prove that arbitrary text, images or GitHub metadata are safe.
 const history = process.argv.includes("--history");
-const forbiddenPath = /^(?:artifacts\/|\.claude\/|\.codex-attachments\/|\.wrangler\/|reference\/|self-hosted\/data\/|docs\/user-guide\/images\/)|(?:^|\/)(?:\.env|\.dev\.vars)(?!\.example$)(?:\.|$)|^plugins\/orcaslicer\/.*-result\.json$/i;
+const forbiddenPath = /^(?:artifacts\/|\.claude\/|\.codex-attachments\/|\.wrangler\/|reference\/|self-hosted\/data\/|docs\/user-guide\/images\/|wrangler\.json$)|(?:^|\/)(?:\.env|\.dev\.vars)(?!\.example$)(?:\.|$)|^plugins\/orcaslicer\/.*-result\.json$/i;
 const privateName = /\bqidi[1-9]\d*\b/i;
 const credential = /(?:gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[A-Z0-9]{16}|-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----)/;
 const network = /\b(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}|[a-z0-9-]+\.(?:local|lan|home|internal)|[a-z0-9.-]+\.ts\.net)\b/i;

@@ -1,6 +1,6 @@
 # klippee
 
-[Support me](https://ko-fi.com/tquinn)
+If you like this project, you can [support me here](https://ko-fi.com/tquinn)
 
 Klippee stores, syncs, and shares Klipper printer configurations. It includes:
 

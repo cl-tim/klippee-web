@@ -1,6 +1,6 @@
 # Agent Notes
 
-Read the [README](README.md) for public development and installation.
+Read the [README](README.md) for a project summary and install links, and use [`docs/index.md`](docs/index.md) to navigate the version-specific documentation in this checkout.
 
 ## Project Shape
 
@@ -10,7 +10,7 @@ Klippee is a mixed Vite/React, Cloudflare Worker, and Python FastAPI project.
 - Worker API: `worker/index.ts`, Cloudflare D1/R2 bindings, static assets from
   `dist/client` (the `@cloudflare/vite-plugin` build also writes the Worker
   bundle and a generated deploy config to `dist/klippee`; see
-  `docs/deployment.md` section 9).
+  `docs/operations/deployment.md` section 9).
 - CAD service: `server/`, FastAPI, packaged by `Dockerfile.cad` for Cloudflare Containers.
 - Smoke and guardrail tests live in `tests/` and `scripts/`: Worker API smoke
   tests in `tests/worker/*.test.mjs`, CLI tests in `tests/cli/*.test.mjs`
@@ -23,7 +23,7 @@ Klippee is a mixed Vite/React, Cloudflare Worker, and Python FastAPI project.
   (`src/features/workflows/components/`). That is by design — do not spread it
   to other UI surfaces, and do not remove it as "mostly unused".
 - The printer CLI `public/install/klippee.py` must stay runnable on
-  Python 3.7 (see `docs/printer-integration.md`): no walrus operator (`:=`),
+  Python 3.7 (see `docs/guides/printer-integration.md`): no walrus operator (`:=`),
   no `match` statements, no other 3.8+-only syntax or stdlib.
 
 ## Local Development
@@ -91,5 +91,5 @@ and probe output out of Git.
 
 The tag-only release workflow publishes Docker Compose files and downloadable
 app and CAD images. Run `npm run check` before creating a `selfhost-v*` tag.
-See [Self-hosting](docs/self-hosting.md) for installation and
-[Cloudflare deployment](docs/deployment.md) for operating a Cloudflare instance.
+See [Self-hosting](docs/operations/self-hosting.md) for installation and
+[Cloudflare deployment](docs/operations/deployment.md) for operating a Cloudflare instance.

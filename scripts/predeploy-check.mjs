@@ -173,8 +173,8 @@ function assertWranglerBindings(config) {
 
 async function assertCloudflareDeploymentDocs() {
   const [deployment, readiness] = await Promise.all([
-    readFile("docs/deployment.md", "utf8"),
-    readFile("docs/production-readiness.md", "utf8"),
+    readFile("docs/operations/deployment.md", "utf8"),
+    readFile("docs/operations/production-readiness.md", "utf8"),
   ]);
   const combined = `${deployment}\n${readiness}`;
   const requiredSnippets = [

@@ -1,7 +1,7 @@
 # OrcaSlicer plugin development
 
 For installation, pairing, and profile management, see
-[Klippee for OrcaSlicer](../../docs/orcaslicer-plugin.md).
+[Klippee for OrcaSlicer](../../docs/guides/orcaslicer-plugin.md).
 
 - `klippee_plugin.py` and `klippee_plugin.html` implement the plugin.
 - `capture_core.py` reads the current setup and profile library.

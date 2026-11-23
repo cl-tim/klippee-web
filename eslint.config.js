@@ -5,13 +5,21 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default [
-  { ignores: [".claude", ".venv", "artifacts", "dist", "output", "public/vendor", "src/features/openscad/vendor", "worker-configuration.d.ts"] },
+  { ignores: [".claude", ".venv", "artifacts", "dist", "output", "public/vendor", "src/features/openscad/vendor", "site", "worker-configuration.d.ts"] },
   js.configs.recommended,
   {
     files: ["scripts/**/*.mjs", "tests/**/*.mjs"],
     languageOptions: {
       ecmaVersion: "latest",
       globals: globals.node,
+      sourceType: "module",
+    },
+  },
+  {
+    files: ["docs/assets/**/*.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      globals: globals.browser,
       sourceType: "module",
     },
   },

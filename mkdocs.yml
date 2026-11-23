@@ -1,0 +1,86 @@
+site_name: Klippee documentation
+site_url: https://cl-tim.github.io/klippee-web/
+repo_url: https://github.com/cl-tim/klippee-web
+repo_name: cl-tim/klippee-web
+edit_uri: blob/main/docs/
+docs_dir: docs
+site_dir: site
+strict: true
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: warn
+  links:
+    not_found: warn
+    anchors: warn
+    absolute_links: relative_to_docs
+    unrecognized_links: warn
+exclude_docs: |
+  /orcaslicer-2.5.0-rc-compatibility.md
+  /architecture.md
+  /authentication.md
+  /browser-storage.md
+  /config-editor.md
+  /deployment.md
+  /log-diagnostics.md
+  /openscad.md
+  /orcaslicer-plugin.md
+  /package-format.md
+  /printer-integration.md
+  /production-readiness.md
+  /public-catalog-review.md
+  /r2-reclamation.md
+  /safety-policy.md
+  /self-hosting.md
+  /sync-behavior.md
+  /ui-components.md
+  /ui-visual-qa.md
+  /web-editing-history.md
+  /user-guide/README.md
+  /user-guide/images/**
+theme:
+  name: readthedocs
+  highlightjs: false
+extra_css:
+  - assets/docs.css
+extra_javascript:
+  - assets/rtd-nav-a11y.js
+plugins:
+  - search
+nav:
+  - Home: index.md
+  - Getting started:
+      - Overview: getting-started/index.md
+  - Guides:
+      - Configuration workspace: guides/configuration-workspace.md
+      - Desktop and printer integration: guides/desktop-and-printer.md
+      - Shared Configs: guides/shared-configs.md
+      - Diagnostics: guides/diagnostics.md
+      - Profiles and parametric CAD: guides/profiles-and-cad.md
+      - Troubleshooting: guides/troubleshooting.md
+      - Technical guides:
+          - Printer integration: guides/printer-integration.md
+          - OrcaSlicer plugin: guides/orcaslicer-plugin.md
+          - Parametric CAD editors: guides/openscad.md
+          - Klippy log diagnostics: guides/log-diagnostics.md
+  - Reference:
+      - Authentication: reference/authentication.md
+      - Browser and history storage: reference/browser-storage.md
+      - Package format: reference/package-format.md
+      - Configuration sync behavior: reference/sync-behavior.md
+      - Safety policy: reference/safety-policy.md
+  - Operations:
+      - Overview: operations/index.md
+      - Cloudflare deployment: operations/deployment.md
+      - Production readiness: operations/production-readiness.md
+      - Self-hosting: operations/self-hosting.md
+      - R2 reclamation: operations/r2-reclamation.md
+      - Public catalog review: operations/public-catalog-review.md
+  - Development:
+      - Overview: development/index.md
+      - Architecture: development/architecture.md
+      - Configuration editor: development/config-editor.md
+      - Web editing and history: development/web-editing-history.md
+      - UI components: development/ui-components.md
+      - UI visual QA: development/ui-visual-qa.md

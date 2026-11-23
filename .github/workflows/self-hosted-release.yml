@@ -70,7 +70,7 @@ jobs:
           mkdir release
           sed -E "s/selfhost-v[0-9]+\.[0-9]+\.[0-9]+/$RELEASE_TAG/g" compose.example.yaml > release/compose.yaml
           sed -E "s/selfhost-v[0-9]+\.[0-9]+\.[0-9]+/$RELEASE_TAG/g" .env.example > release/default.env.example
-          sed -e "s|(../NOTICE.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/NOTICE.md)|g" -e "s|(../server/CAD_NOTICE.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/server/CAD_NOTICE.md)|g" -e "s|(r2-reclamation.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/docs/r2-reclamation.md)|g" docs/self-hosting.md > release/SELF-HOSTING.md
+          sed -e "s|(https://github.com/cl-tim/klippee-web/blob/main/NOTICE.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/NOTICE.md)|g" -e "s|(https://github.com/cl-tim/klippee-web/blob/main/server/CAD_NOTICE.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/server/CAD_NOTICE.md)|g" -e "s|(r2-reclamation.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/docs/operations/r2-reclamation.md)|g" docs/operations/self-hosting.md > release/SELF-HOSTING.md
           cp LICENSE NOTICE.md release/
           git archive --format=tar.gz --prefix=klippee/ -o "release/klippee-$RELEASE_TAG-source.tar.gz" HEAD
           docker image save "klippee:$RELEASE_TAG" | gzip -1 > release/klippee-app-linux-amd64.tar.gz

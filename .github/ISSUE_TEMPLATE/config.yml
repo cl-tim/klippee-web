@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Self-hosting guide
-    url: https://github.com/cl-tim/klippee-web/blob/main/docs/self-hosting.md
+    url: https://github.com/cl-tim/klippee-web/blob/main/docs/operations/self-hosting.md
     about: Installation, HTTPS, backups and upgrades for your own instance.

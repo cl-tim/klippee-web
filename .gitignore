@@ -21,6 +21,8 @@ gcode_macro_[0-9]*.cfg
 *.tar.gz
 
 reference/
+!docs/reference/
+!docs/reference/**
 
 # Node/Vite outputs
 node_modules/
@@ -49,3 +51,6 @@ __pycache__/
 .env*
 !.env.example
 CLAUDE.md
+
+# MkDocs output
+site/

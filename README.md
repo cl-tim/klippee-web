@@ -2,6 +2,8 @@
 
 If you like this project, you can [support me here](https://ko-fi.com/tquinn)
 
+Read the [Klippee documentation](https://cl-tim.github.io/klippee-web/).
+
 Klippee stores, syncs, and shares Klipper printer configurations. It includes:
 
 - Public config packages that people can browse, compare, fork, and reuse. A

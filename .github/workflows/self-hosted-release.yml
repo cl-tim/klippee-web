@@ -4,8 +4,11 @@ on:
     tags: ["selfhost-v*"]
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
 concurrency:
-  group: self-hosted-release-${{ github.ref }}
+  group: self-hosted-release
   cancel-in-progress: false
 jobs:
   verify:
@@ -29,22 +32,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Validate release tag
-        run: |
-          [[ "$GITHUB_REF_NAME" =~ ^selfhost-v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.node-version'
+      - name: Validate release tag and image names
+        id: images
+        run: node scripts/self-host-release.mjs metadata >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
           platforms: linux/amd64
           load: true
-          tags: klippee:${{ github.ref_name }}
+          tags: ${{ steps.images.outputs.app }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -55,26 +59,40 @@ jobs:
           file: Dockerfile.cad
           platforms: linux/amd64
           load: true
-          tags: klippee-cad:${{ github.ref_name }}
+          tags: ${{ steps.images.outputs.cad }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
       - name: Verify Compose images before publishing
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: node scripts/self-host-container-smoke.mjs "klippee:$RELEASE_TAG" "klippee-cad:$RELEASE_TAG"
+          APP_IMAGE: ${{ steps.images.outputs.app }}
+          CAD_IMAGE: ${{ steps.images.outputs.cad }}
+        run: node scripts/self-host-container-smoke.mjs "$APP_IMAGE" "$CAD_IMAGE"
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push verified images sequentially
+        env:
+          APP_IMAGE: ${{ steps.images.outputs.app }}
+          CAD_IMAGE: ${{ steps.images.outputs.cad }}
+        run: |
+          docker push "$APP_IMAGE"
+          docker push "$CAD_IMAGE"
+      - name: Verify anonymous access to both images
+        run: node scripts/self-host-release.mjs verify-public
       - name: Prepare release files
         env:
           RELEASE_TAG: ${{ github.ref_name }}
+          APP_IMAGE: ${{ steps.images.outputs.app }}
+          CAD_IMAGE: ${{ steps.images.outputs.cad }}
         run: |
-          mkdir release
-          sed -E "s/selfhost-v[0-9]+\.[0-9]+\.[0-9]+/$RELEASE_TAG/g" compose.example.yaml > release/compose.yaml
-          sed -E "s/selfhost-v[0-9]+\.[0-9]+\.[0-9]+/$RELEASE_TAG/g" .env.example > release/default.env.example
-          sed -e "s|(https://github.com/cl-tim/klippee-web/blob/main/NOTICE.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/NOTICE.md)|g" -e "s|(https://github.com/cl-tim/klippee-web/blob/main/server/CAD_NOTICE.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/server/CAD_NOTICE.md)|g" -e "s|(r2-reclamation.md)|(https://github.com/$GITHUB_REPOSITORY/blob/$RELEASE_TAG/docs/operations/r2-reclamation.md)|g" docs/operations/self-hosting.md > release/SELF-HOSTING.md
-          cp LICENSE NOTICE.md release/
+          node scripts/self-host-release.mjs prepare
           git archive --format=tar.gz --prefix=klippee/ -o "release/klippee-$RELEASE_TAG-source.tar.gz" HEAD
-          docker image save "klippee:$RELEASE_TAG" | gzip -1 > release/klippee-app-linux-amd64.tar.gz
-          docker image save "klippee-cad:$RELEASE_TAG" | gzip -1 > release/klippee-cad-linux-amd64.tar.gz
+          docker image save "$APP_IMAGE" | gzip -1 > release/klippee-app-linux-amd64.tar.gz
+          docker image save "$CAD_IMAGE" | gzip -1 > release/klippee-cad-linux-amd64.tar.gz
           cd release
           sha256sum compose.yaml default.env.example SELF-HOSTING.md LICENSE NOTICE.md *.tar.gz > SHA256SUMS
       - name: Publish prerelease
@@ -82,4 +100,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$RELEASE_TAG" --verify-tag --prerelease --title "Klippee $RELEASE_TAG" --notes "Experimental single-server Docker Compose release for Linux AMD64. Download and load both image archives; no registry account is needed. Read SELF-HOSTING.md before installation." release/compose.yaml release/default.env.example release/SELF-HOSTING.md release/LICENSE release/NOTICE.md release/SHA256SUMS release/*.tar.gz
+          gh release create "$RELEASE_TAG" --verify-tag --prerelease --title "Klippee $RELEASE_TAG" --notes "Experimental single-server Docker Compose release for Linux AMD64. Download compose.yaml and default.env.example, configure .env, then run docker compose pull and docker compose up -d --no-build. App and CAD images are public on GHCR; no login or local build is required. Image archives are also provided for offline installation. Read SELF-HOSTING.md before installation." release/compose.yaml release/default.env.example release/SELF-HOSTING.md release/LICENSE release/NOTICE.md release/SHA256SUMS release/*.tar.gz

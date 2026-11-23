@@ -1,0 +1,14 @@
+# Explicit source builds use local names and never replace release image tags.
+services:
+  app:
+    image: klippee-local:build
+    pull_policy: never
+    build:
+      context: .
+      dockerfile: Dockerfile
+  cad:
+    image: klippee-cad-local:build
+    pull_policy: never
+    build:
+      context: .
+      dockerfile: Dockerfile.cad

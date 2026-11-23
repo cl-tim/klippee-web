@@ -1,8 +1,8 @@
-# Install with the image archives from a selfhost-v* release.
+# Pull public images from GHCR using the matching selfhost-v* release tag.
 services:
   app:
-    image: ${KLIPPEE_IMAGE:-klippee}:${KLIPPEE_VERSION:-selfhost-v0.1.3}
-    pull_policy: never
+    image: ${KLIPPEE_IMAGE:-ghcr.io/cl-tim/klippee}:${KLIPPEE_VERSION:-selfhost-v0.1.4}
+    pull_policy: missing
     restart: unless-stopped
     init: true
     env_file: .env
@@ -27,8 +27,8 @@ services:
     mem_limit: 2g
     pids_limit: 256
   cad:
-    image: ${KLIPPEE_CAD_IMAGE:-klippee-cad}:${KLIPPEE_VERSION:-selfhost-v0.1.3}
-    pull_policy: never
+    image: ${KLIPPEE_CAD_IMAGE:-ghcr.io/cl-tim/klippee-cad}:${KLIPPEE_VERSION:-selfhost-v0.1.4}
+    pull_policy: missing
     restart: unless-stopped
     init: true
     healthcheck:

@@ -27,7 +27,7 @@ configurations in [Shared Configs](https://klippee.xyz/shared-configs), or open
 
 ## Install
 
-Start with the [Getting started guide](https://cl-tim.github.io/klippee-web/getting-started/). To self-host, download the Compose file, environment template, app and CAD image archives, and checksums from one [`selfhost-v*` release](https://github.com/cl-tim/klippee-web/releases), then follow the [self-hosting guide](https://cl-tim.github.io/klippee-web/operations/self-hosting/).
+Start with the [Getting started guide](https://cl-tim.github.io/klippee-web/getting-started/). To self-host, download the Compose file, environment template and checksums from one [`selfhost-v*` release](https://github.com/cl-tim/klippee-web/releases), then follow the [self-hosting guide](https://cl-tim.github.io/klippee-web/operations/self-hosting/). From `selfhost-v0.1.4`, Compose pulls the prebuilt app and CAD images from GHCR; offline image archives are also available.
 
 Browse the [full documentation](https://cl-tim.github.io/klippee-web/) or read it locally under [`docs/`](docs/).
 

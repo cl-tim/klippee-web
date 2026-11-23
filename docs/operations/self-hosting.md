@@ -16,10 +16,14 @@ using the release for irreplaceable configurations.
 
 ## Install
 
-Download `compose.yaml`, `default.env.example`, `klippee-app-linux-amd64.tar.gz`,
-`klippee-cad-linux-amd64.tar.gz` and `SHA256SUMS` from the same `selfhost-v*`
+Download `compose.yaml`, `default.env.example` and `SHA256SUMS` from the same `selfhost-v*`
 [GitHub release](https://github.com/cl-tim/klippee-web/releases) into an empty
-directory.
+directory. The app and CAD images are pulled from GitHub Container Registry
+(GHCR); no GitHub login, compiler or source checkout is needed.
+
+Registry installation starts with `selfhost-v0.1.4` when that release is
+published. `selfhost-v0.1.3` provides image archives only; use its own Compose
+file and the [offline installation](#offline-installation) steps.
 
 ```sh
 cp default.env.example .env
@@ -47,13 +51,40 @@ https://klippee.example.com/api/auth/discord/callback
 Then start the services:
 
 ```sh
+grep -E '  (compose\.yaml|default\.env\.example)$' SHA256SUMS | sha256sum --check
+docker compose --parallel 1 pull
+docker compose up -d --no-build
+docker compose ps
+docker compose logs --tail 100 app
+```
+
+Both images use the same exact release tag:
+
+- `ghcr.io/cl-tim/klippee:selfhost-v<version>`
+- `ghcr.io/cl-tim/klippee-cad:selfhost-v<version>`
+
+The supplied Compose file pins a version rather than `latest` and has no build
+instructions. Keep `KLIPPEE_VERSION` on a published release. A missing tag or
+an access error stops installation instead of starting a local build.
+
+### Offline installation
+
+On a connected machine, also download `klippee-app-linux-amd64.tar.gz` and
+`klippee-cad-linux-amd64.tar.gz` from the same release. Transfer the release
+files to the server, configure `.env` as above, then run:
+
+```sh
 sha256sum --check --ignore-missing SHA256SUMS
 docker image load --input klippee-app-linux-amd64.tar.gz
 docker image load --input klippee-cad-linux-amd64.tar.gz
 docker compose up -d --no-build --pull never
-docker compose ps
-docker compose logs --tail 100 app
 ```
+
+New archives retain the GHCR image names and tags. For an older archive-only
+release, keep its bundled Compose file, which uses the original local image
+names. To use those older archives with a newer Compose file, set
+`KLIPPEE_IMAGE=klippee`, `KLIPPEE_CAD_IMAGE=klippee-cad` and the matching
+`KLIPPEE_VERSION` in `.env`.
 
 The app applies pending migrations transactionally before listening. Existing
 data survives container recreation. Local mode opens a single empty workspace
@@ -108,9 +139,14 @@ Use a clean checkout of a release tag, copy `.env.example` to `.env`, configure
 it as above, then run:
 
 ```sh
-docker compose build --pull
-docker compose up -d --no-build --pull never
+docker compose -f compose.yaml -f compose.build.yaml build --pull app
+docker compose -f compose.yaml -f compose.build.yaml build --pull cad
+docker compose -f compose.yaml -f compose.build.yaml up -d --no-build --pull never
 ```
+
+Use both `-f` options for subsequent Compose commands on this installation.
+The build override names the images `klippee-local:build` and
+`klippee-cad-local:build`, keeping local builds separate from release tags.
 
 The Docker build uses explicit source paths, never copies `.env`, `.dev.vars`,
 local printer captures, or Git history, and installs npm dependencies with the
@@ -137,15 +173,24 @@ restore the archive into an empty data volume, restore the matching `.env`, and
 start the matching release. Never copy live SQLite files for a backup.
 
 Before upgrading, make and verify a backup, read the release notes, and update
-both the Compose file and `KLIPPEE_VERSION` together. Download the new image
-archives and checksum file from that release, then load both images:
+both the Compose file and `KLIPPEE_VERSION` together. Download the new Compose
+file, environment template and checksum file from that release. Keep your
+configured `.env`, merge any new settings from `default.env.example`, and retain
+your `SESSION_SECRET`.
+
+When switching from archive-only local images to GHCR, remove local
+`KLIPPEE_IMAGE` and `KLIPPEE_CAD_IMAGE` overrides from `.env` so the GHCR defaults
+apply. Verify the new installation files, then pull both images:
 
 ```sh
-sha256sum --check --ignore-missing SHA256SUMS
-docker image load --input klippee-app-linux-amd64.tar.gz
-docker image load --input klippee-cad-linux-amd64.tar.gz
-docker compose up -d --no-build --pull never
+grep -E '  (compose\.yaml|default\.env\.example)$' SHA256SUMS | sha256sum --check
+docker compose --parallel 1 pull
+docker compose up -d --no-build
 ```
+
+For an offline upgrade, use the matching image archives and the offline
+installation steps instead. Keep the same Compose project/directory name so
+the installation continues to use its existing data volume.
 
 Migrations run once on startup. A downgrade may require restoring the old
 volume backup as well as the old image tag; older code may not understand the
@@ -158,3 +203,28 @@ inventory helper is for the hosted Cloudflare service, not this local volume.
 Klippee is GPL-2.0-or-later. Bundled models have their own licenses and some
 include noncommercial terms. See [notices](https://github.com/cl-tim/klippee-web/blob/main/NOTICE.md) and
 [CAD runtime notices](https://github.com/cl-tim/klippee-web/blob/main/server/CAD_NOTICE.md) before redistributing images.
+
+## Publishing a release
+
+Maintainers publish releases by pushing a reviewed `selfhost-v<version>` tag
+after the publication check and `npm run check` pass. The workflow runs its
+checks sequentially, builds the app and CAD images in sequence, and tests the
+pair through Compose before pushing those same images. It authenticates with
+the repository's `GITHUB_TOKEN` and `packages: write`; no separate registry
+secret is needed. Both packages carry the source repository and revision labels.
+
+GitHub makes newly created packages private by default. On the first release:
+
+1. Wait for both images to be pushed. The anonymous-access check will stop
+   the job if either package is private.
+2. Open [your packages](https://github.com/cl-tim?tab=packages), then open
+   `klippee` and `klippee-cad`. In each package's **Package settings**, change
+   **Visibility** to **Public** and ensure `cl-tim/klippee-web` has Actions access.
+3. Rerun the failed publish job. The workflow checks both manifests with a
+   temporary, empty Docker credential configuration before publishing the
+   GitHub release and its offline archives.
+
+See GitHub's [container registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+for package visibility and repository access settings. Users can pull public
+images without authentication. Keep the app and CAD release tags together;
+there is no automatically updated `latest` tag.

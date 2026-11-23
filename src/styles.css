@@ -1707,6 +1707,7 @@ body.is-resizing-openscad * {
   .sidebar.is-collapsed .sidebar-copy,
   .sidebar.is-collapsed .tab .mantine-NavLink-body,
   .sidebar.is-collapsed .support-link .mantine-NavLink-body,
+  .sidebar.is-collapsed .documentation-link .mantine-NavLink-body,
   .sidebar.is-collapsed .login-button .mantine-Button-label > span {
     display: none;
   }
@@ -1734,11 +1735,13 @@ body.is-resizing-openscad * {
   }
 
   .sidebar.is-collapsed .support-link,
+  .sidebar.is-collapsed .documentation-link,
   .sidebar.is-collapsed .login-button {
     justify-content: center;
   }
 
-  .sidebar.is-collapsed .support-link {
+  .sidebar.is-collapsed .support-link,
+  .sidebar.is-collapsed .documentation-link {
     width: 44px;
   }
 

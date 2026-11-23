@@ -2,6 +2,7 @@ import {
   BookOpen,
   Cable,
   CheckCircle2,
+  ExternalLink,
   FileSliders,
   FileSearch,
   Grid3X3,
@@ -259,6 +260,18 @@ function AppShell() {
         </MantineAppShell.Section>
         <MantineAppShell.Section className="sidebar-auth-slot">
           <Separator />
+          <NavLink
+            component="a"
+            aria-label="Documentation"
+            className="documentation-link"
+            href="https://cl-tim.github.io/klippee-web/"
+            rel="noopener noreferrer"
+            target="_blank"
+            title="Documentation"
+            label="Documentation"
+            leftSection={<ExternalLink size={20} aria-hidden="true" />}
+            styles={{ root: { minHeight: 44, borderRadius: "var(--mantine-radius-md)", color: "var(--muted-foreground)", paddingInline: appNavigationExpanded ? 12 : 0 }, label: { fontSize: "1rem" }, section: { marginInlineEnd: appNavigationExpanded ? 10 : 0 } }}
+          />
           <NavLink
             component="a"
             aria-label="Support me"

@@ -24,7 +24,7 @@ function renderMobileShell() {
 }
 
 describe("App shell", () => {
-  it("renders the brand, primary tabs, and the support link", async () => {
+  it("renders the brand, primary tabs, and external links", async () => {
     render(<App />);
 
     expect(await screen.findByLabelText("Klippee navigation")).toHaveTextContent("Klippee");
@@ -38,6 +38,11 @@ describe("App shell", () => {
 
     const support = screen.getByRole("link", { name: /support me/i });
     expect(support).toHaveAttribute("href", "https://ko-fi.com/tquinn");
+
+    const documentation = screen.getByRole("link", { name: "Documentation" });
+    expect(documentation).toHaveAttribute("href", "https://cl-tim.github.io/klippee-web/");
+    expect(documentation).toHaveAttribute("target", "_blank");
+    expect(documentation).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("gates a protected tab behind sign-in when signed out", async () => {
@@ -173,6 +178,10 @@ describe("App shell", () => {
 
     expect(screen.getByRole("button", { name: "Close navigation menu" })).toHaveAttribute("aria-expanded", "true");
     expect(shellNav).toHaveClass("is-menu-open");
+    expect(within(shellNav).getByRole("link", { name: "Documentation" })).toHaveAttribute(
+      "href",
+      "https://cl-tim.github.io/klippee-web/",
+    );
 
     await userEvent.click(await screen.findByRole("link", { name: "Shared Configs" }));
 
@@ -197,6 +206,10 @@ describe("App shell", () => {
 
     expect(shell).toHaveClass("is-navigation-collapsed");
     expect(shellNav).toHaveClass("is-collapsed");
+    expect(screen.getByRole("link", { name: "Documentation" })).toHaveAttribute(
+      "href",
+      "https://cl-tim.github.io/klippee-web/",
+    );
     expect(JSON.parse(localStorage.getItem("klippee.mvp.appNavigationExpanded") ?? "null")).toBe(false);
 
     await userEvent.click(screen.getByRole("button", { name: "Expand app menu" }));

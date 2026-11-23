@@ -76,12 +76,14 @@ After removing any override: run `npm install`, then `npm audit` and
 
 ## Public source and releases
 
+Develop and push changes in `cl-tim/klippee-web`, the active repository. The
+private `cl-tim/klippee` repository is retired and archived. Never transfer its
+private Git history into this repository.
+
 Keep product guides, operator instructions, contributor documentation, and
-license notices in the public tree. When syncing source from the private
-development repository, preserve the public versions of contributor and
-operator guides. Leave internal plans, historical QA reports, and private
-publication notes out of the snapshot. Never transfer private Git history
-into this repository.
+license notices in the public tree. When importing reviewed source, preserve
+these public guides and exclude internal plans, historical QA reports, and
+private publication notes.
 
 Run `npm run publication:check` before publishing a source snapshot. Use
 synthetic printer fixtures and keep personal printer captures, site credentials,

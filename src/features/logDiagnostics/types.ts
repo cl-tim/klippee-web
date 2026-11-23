@@ -114,7 +114,7 @@ export type PrintRunSummary = {
   startTime: number | null;
 };
 
-export type LogSourceKind = "kernel" | "klippy" | "moonraker" | "unknown";
+export type LogSourceKind = "kernel" | "klippy" | "moonraker" | "usb" | "unknown";
 
 export type LogSourceSummary = {
   compressed: boolean;

@@ -20,6 +20,11 @@ it("includes only allowlisted QIDI Box variables in diagnostic snapshots", async
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
+it("collects bounded persistent USB evidence and includes both rotations in diagnostic bundles", async () => {
+  const result = await run(python, [fixturePath("diagnostic_usb_events.py"), installer]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
 it("uploads a private diagnostic bundle with Klippy, Moonraker, and runtime evidence", async () => {
   const root = await mkdtemp(join(tmpdir(), "klippee-diagnostic-upload-"));
   const home = join(root, "home");

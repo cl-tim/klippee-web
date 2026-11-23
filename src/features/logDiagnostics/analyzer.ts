@@ -21,6 +21,7 @@ import type {
   StatsFields,
 } from "./types";
 import { VendorProfileDetector } from "./vendorProfiles";
+import { correlatePersistentUsbEvidence, parsePersistentUsbRecord, persistentUsbMessage, type PersistentUsbEvidence } from "./persistentUsbEvidence";
 
 const statsPattern = /^Stats\s+([0-9]+(?:\.[0-9]+)?):\s*(.*)$/;
 const eventTimePattern = /\beventtime=([0-9]+(?:\.[0-9]+)?)/;
@@ -141,6 +142,8 @@ export class StreamingKlippyLogAnalyzer {
   private recentLines: IncidentLine[] = [];
   private sessions: MutableSession[] = [];
   private sources: LogSourceSummary[] = [];
+  private usbEvents: PersistentUsbEvidence[] = [];
+  private usbBootId: string | null = null;
   private sourceLine = 0;
   private shutdownCollector: ShutdownDumpCollector;
   private truncation = {
@@ -176,6 +179,7 @@ export class StreamingKlippyLogAnalyzer {
     this.carry = "";
     this.recentCommands = [];
     this.recentLines = [];
+    this.usbBootId = null;
   }
 
   pushChunk(chunk: string) {
@@ -216,6 +220,7 @@ export class StreamingKlippyLogAnalyzer {
     const events = finalizedSessions.flatMap((session) => session.events);
     const prints = finalizedSessions.flatMap((session) => session.prints);
     const findings = buildFindings(finalizedSessions, shutdownDumps);
+    correlatePersistentUsbEvidence(this.usbEvents.map((record) => ({ ...record, session: sessionNumbers.get(record.session) ?? record.session })), finalizedSessions, shutdownDumps, findings);
     const incidents = this.incidents.map((incident) => ({
       after: incident.after,
       anchor: incident.anchor,
@@ -284,6 +289,21 @@ export class StreamingKlippyLogAnalyzer {
     if (line.length > this.limits.maxLineLength) {
       line = line.slice(0, this.limits.maxLineLength);
       this.truncation.longLines += 1;
+    }
+    if (this.currentSource?.kind === "usb") {
+      const record = parsePersistentUsbRecord(line);
+      if (!record) return;
+      if (this.usbBootId !== null && this.usbBootId !== record.bootId) this.current = this.startSession(lineNumber, "host boot changed");
+      this.usbBootId = record.bootId;
+      this.current.endLine = lineNumber;
+      if (this.usbEvents.length >= this.limits.maxEvents) {
+        this.truncation.droppedEvents += 1;
+        return;
+      }
+      this.usbEvents.push({ ...record, line: lineNumber, source: this.currentSource.name, session: this.current.number });
+      addEvent(this.current, lineNumber, record.monotonic, record.action === "remove" ? "warning" : "info", "communication",
+        persistentUsbMessage(record), [], this.limits.maxEvents, this.truncation);
+      return;
     }
     this.vendorDetector.observe(line);
     this.captureAfterContext(lineNumber, line);
@@ -1769,6 +1789,7 @@ function mcuTrendFindings(session: KlippySession): DiagnosticFinding[] {
 
 export function inferSourceKind(fileName: string): LogSourceKind {
   const normalized = fileName.toLowerCase();
+  if (/(?:^|\/)(?:usb-events(?:\.previous)?\.log|events\.jsonl(?:\.1)?)$/.test(normalized)) return "usb";
   if (normalized.includes("klippy")) return "klippy";
   if (normalized.includes("moonraker")) return "moonraker";
   if (/(?:dmesg|kern|journal|syslog)/.test(normalized)) return "kernel";

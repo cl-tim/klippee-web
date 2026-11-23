@@ -266,6 +266,12 @@ strict, typed allowlist of non-secret QIDI Box state used for incident analysis
 variables and their names are omitted; the snapshot records only how many were
 left out.
 
+When hlab's optional persistent USB logger is installed, the bundle also includes
+both rotations from `/var/lib/hlab-usb-events/`, bounded to 256 KiB each. These
+records carry boot identity and monotonic time so retained events can be
+distinguished from later boots. Collection does not install or enable logging;
+missing logger files do not prevent diagnostics upload.
+
 Uploads are private to the printer owner, expire after 48 hours, and are
 limited to the newest five per printer.
 

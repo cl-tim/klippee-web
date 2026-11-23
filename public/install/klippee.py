@@ -36,7 +36,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
 
-CLI_VERSION = "2026.10.08"
+CLI_VERSION = "2026.11.23"
 MAX_CLI_BYTES = 2_000_000
 OFFICIAL_UPGRADE_BASE_URL = "https://klippee.xyz"
 WORKSPACE_IGNORE_CONTENT = "# Klippee local state contains sync credentials.\n*\n"
@@ -3316,6 +3316,42 @@ def collect_command_diagnostic(command: list[str]) -> tuple[bytes | None, bool]:
         return content if content.strip() else None, truncated
 
 
+def collect_persistent_usb_diagnostics(
+    directory: Path = Path("/var/lib/hlab-usb-events"),
+) -> tuple[list[tuple[str, bytes, str, bool]], list[str]]:
+    """Read only the two bounded hlab USB logs; no credentials or serial IDs."""
+    artifacts: list[tuple[str, bytes, str, bool]] = []
+    warnings: list[str] = []
+    if not directory.exists():
+        return artifacts, warnings
+    if any(path.is_symlink() for path in [directory, *directory.parents]):
+        return [], ["Persistent USB evidence directory is symlinked; collection skipped."]
+    for filename, archive_name in (
+        ("events.jsonl.1", "logs/usb-events.previous.log"),
+        ("events.jsonl", "logs/usb-events.log"),
+    ):
+        source = directory / filename
+        try:
+            if not source.exists():
+                continue
+            if source.is_symlink() or not source.is_file():
+                warnings.append("Persistent USB evidence is not a regular file; collection skipped.")
+                continue
+            with source.open("rb") as stream:
+                size = os.fstat(stream.fileno()).st_size
+                limit = 256 * 1024
+                truncated = size > limit
+                stream.seek(max(0, size - limit))
+                if truncated:
+                    stream.readline(limit)
+                content = stream.read(limit)
+            if content.strip():
+                artifacts.append((archive_name, content, "usb-events", truncated))
+        except OSError:
+            warnings.append("Persistent USB evidence was unreadable; collection skipped.")
+    return artifacts, warnings
+
+
 def collect_journal_diagnostics() -> tuple[list[tuple[str, bytes, str, bool]], list[str]]:
     journalctl = resolve_program("journalctl")
     if journalctl is None:
@@ -3413,6 +3449,8 @@ def prepare_diagnostic_bundle(
     warnings.extend(moonraker_warnings)
     journal_artifacts, journal_warnings = collect_journal_diagnostics()
     warnings.extend(journal_warnings)
+    usb_artifacts, usb_warnings = collect_persistent_usb_diagnostics()
+    warnings.extend(usb_warnings)
     host_info = diagnostic_json({
         **collect_host_info(config),
         "generatedAt": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -3426,6 +3464,7 @@ def prepare_diagnostic_bundle(
         ("snapshots/usb-serial-topology.json", usb_serial_topology, "system-snapshot", False),
         *[(name, content, kind, False) for name, content, kind in moonraker_artifacts],
         *journal_artifacts,
+        *usb_artifacts,
     ]
     for _, content, _, truncated in memory_artifacts:
         original_size += len(content)

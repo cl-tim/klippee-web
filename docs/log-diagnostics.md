@@ -14,6 +14,7 @@ containing the current Klippy log and any available bounded supporting evidence:
 
 - `moonraker.log`
 - Klipper, Moonraker, and kernel journal excerpts
+- retained hlab USB events, when installed, including the previous rotation
 - Moonraker printer/server information
 - resolved `configfile` state, runtime object status, heaters, sensors, MCUs,
   print state, and system statistics
@@ -42,6 +43,21 @@ bounded to its newest 64 MiB, supporting logs to their newest 8 MiB, and each
 journal excerpt to its newest 2 MiB. The diagnostics inbox identifies bundles
 with truncated sources and allows immediate deletion. Legacy plain-text and
 gzip printer uploads remain accepted.
+
+With hlab's optional `printer firmware fixes --usb-event-log`, the CLI also
+reads the two fixed files in `/var/lib/hlab-usb-events/`, at most 256 KiB each.
+They appear as `usb-events.log` and `usb-events.previous.log` in the bundle.
+The root-managed logger records USB add/remove events with boot identity,
+Unix and monotonic timestamps, port and product IDs, without USB serial numbers.
+It retains evidence on disk across reboots, independently of Armbian's RAM log.
+
+The analyzer links a nearby disconnect to a lost-MCU shutdown only when the
+Klipper start wall/monotonic clock anchor matches exactly one retained boot.
+It then compares monotonic time within that boot. Missing or ambiguous anchors,
+multiple disconnected ports and stale events remain unlinked. A retained port
+does not establish MCU identity from a topology snapshot captured after reboot,
+and a disconnect does not by itself prove a power-supply fault. Malformed and
+oversized event records are ignored without discarding other bundle evidence.
 
 Each printer can start four diagnostic uploads per 60 seconds. All sync tokens
 bound to that printer share the allowance. A rejected request returns `429`

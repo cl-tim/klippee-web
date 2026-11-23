@@ -1,6 +1,6 @@
 # Development
 
-The public source repository is [`cl-tim/klippee-web`](https://github.com/cl-tim/klippee-web). The private `cl-tim/klippee` repository is retired; do not transfer private Git history.
+The current source repository is [`cl-tim/klippee-web`](https://github.com/cl-tim/klippee-web).
 
 ## Local setup
 
